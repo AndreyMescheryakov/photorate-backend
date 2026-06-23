@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: demo
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+  datasource:
+    url: jdbc:postgresql://localhost:5432/photorate
+    username: postgres
+    password: "00634724"
