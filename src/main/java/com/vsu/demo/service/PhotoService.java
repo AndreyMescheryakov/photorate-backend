@@ -88,6 +88,12 @@ public class PhotoService {
 
     @Transactional
     public Photo update(UUID id, UpdatePhotoRequest request, Authentication auth) {
+        if (request.title() == null || request.title().isBlank()) {
+            throw new ValidationException("Title must not be empty");
+        }
+        if (request.version() == null) {
+            throw new ValidationException("Version must not be empty");
+        }
         User user = currentUser(auth);
         Photo photo = findById(id);
         if (!photo.getUserId().equals(user.getId()) && user.getRole() != Role.ADMIN) {

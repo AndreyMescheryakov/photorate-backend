@@ -36,6 +36,15 @@ public class UserService {
 
     @Transactional
     public UserResponse create(CreateUserRequest request) {
+        if (request.email() == null || request.email().isBlank()) {
+            throw new ValidationException("Email must not be empty");
+        }
+        if (request.password() == null || request.password().isBlank()) {
+            throw new ValidationException("Password must not be empty");
+        }
+        if (request.nickname() == null || request.nickname().isBlank()) {
+            throw new ValidationException("Nickname must not be empty");
+        }
         userRepository.lockOnValue(request.email());
         Optional<User> maybeUser = userRepository.findByEmail(request.email());
         if (maybeUser.isPresent()) {

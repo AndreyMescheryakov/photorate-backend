@@ -36,6 +36,9 @@ public class CommentService {
 
     @Transactional
     public Comment create(UUID photoId, CreateCommentRequest request, Authentication auth) {
+        if (request.text() == null || request.text().isBlank()) {
+            throw new ValidationException("Comment text must not be empty");
+        }
         User user = userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new ValidationException("User not found"));
         if (photoRepository.findById(photoId).isEmpty()) {

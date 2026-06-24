@@ -61,13 +61,13 @@ public class PhotoRepository {
     public Boolean update(Photo photo) {
         String sql = "UPDATE photos SET title = :title, description = :description, category = :category, " +
                 "version = version + 1 WHERE id = :id AND version = :version";
-        return namedParameterJdbcTemplate.update(sql, Map.of(
-                "id", photo.getId(),
-                "title", photo.getTitle(),
-                "description", photo.getDescription(),
-                "category", photo.getCategory(),
-                "version", photo.getVersion()
-        )) == 1;
+        Map<String, Object> params = new java.util.HashMap<>();
+        params.put("id", photo.getId());
+        params.put("title", photo.getTitle());
+        params.put("description", photo.getDescription());
+        params.put("category", photo.getCategory());
+        params.put("version", photo.getVersion());
+        return namedParameterJdbcTemplate.update(sql, params) == 1;
     }
 
     public Boolean deleteById(UUID id) {
