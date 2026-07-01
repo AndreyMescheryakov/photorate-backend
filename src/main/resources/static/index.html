@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhotoRate</title>
+<style>
+    :root {
+        --bg: #0f1216;
+        --panel: #1a1f27;
+        --panel2: #222833;
+        --border: #2c333f;
+        --text: #e6e9ef;
+        --muted: #9aa4b2;
+        --accent: #4f8cff;
+        --accent2: #7c5cff;
+        --danger: #ef5350;
+        --ok: #34c759;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0; background: var(--bg); color: var(--text);
+        font-family: "Segoe UI", system-ui, Arial, sans-serif;
+    }
+    a { color: var(--accent); }
+    header {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; gap: 16px;
+        padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--border);
+    }
+    .brand { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+    .brand span { color: var(--accent); }
+    .spacer { flex: 1; }
+    .auth-box { display: flex; align-items: center; gap: 8px; }
+    input, select, textarea {
+        background: var(--panel2); border: 1px solid var(--border); color: var(--text);
+        border-radius: 8px; padding: 8px 10px; font-size: 14px; outline: none;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    button {
+        background: var(--accent); color: #fff; border: none; border-radius: 8px;
+        padding: 8px 14px; font-size: 14px; cursor: pointer; font-weight: 600;
+    }
+    button:hover { filter: brightness(1.1); }
+    button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    button.danger { background: var(--danger); }
+    button.small { padding: 5px 10px; font-size: 13px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+    .card {
+        background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+        overflow: hidden; cursor: pointer; transition: transform .1s, border-color .1s;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--accent); }
+    .card-cover { height: 130px; display: flex; align-items: center; justify-content: center;
+        font-size: 42px; font-weight: 800; color: rgba(255,255,255,.85); }
+    .card-body { padding: 14px; }
+    .card-title { font-size: 16px; font-weight: 700; margin: 0 0 6px; }
+    .card-desc { color: var(--muted); font-size: 13px; margin: 0 0 10px; min-height: 34px;
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .badge { display: inline-block; background: var(--panel2); border: 1px solid var(--border);
+        color: var(--muted); font-size: 12px; padding: 2px 8px; border-radius: 20px; }
+    .rate-pill { float: right; background: var(--accent2); color: #fff; font-weight: 700;
+        padding: 2px 10px; border-radius: 20px; font-size: 13px; }
+    .pagination { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 24px; }
+    .muted { color: var(--muted); }
+    /* modal */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none;
+        align-items: flex-start; justify-content: center; padding: 40px 16px; overflow: auto; z-index: 20; }
+    .overlay.open { display: flex; }
+    .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+        width: 100%; max-width: 640px; padding: 22px; }
+    .modal h2 { margin-top: 0; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .field label { font-size: 13px; color: var(--muted); }
+    .crit-row { display: grid; grid-template-columns: 130px 1fr 32px; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .bar { height: 8px; background: var(--panel2); border-radius: 6px; overflow: hidden; }
+    .bar > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .comment { border-top: 1px solid var(--border); padding: 10px 0; }
+    .comment .who { font-size: 12px; color: var(--muted); }
+    .close-x { float: right; cursor: pointer; color: var(--muted); font-size: 22px; line-height: 1; }
+    #toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: var(--panel2); border: 1px solid var(--border); padding: 12px 18px;
+        border-radius: 10px; display: none; z-index: 40; max-width: 90%; }
+    .hidden { display: none !important; }
+    .section-title { font-size: 15px; font-weight: 700; margin: 18px 0 10px; }
+</style>
+</head>
+<body>
+<header>
+    <div class="brand">Photo<span>Rate</span></div>
+    <div class="spacer"></div>
+    <div class="auth-box" id="authBox"></div>
+</header>
+
+<div class="container">
+    <div class="toolbar">
+        <input id="searchInput" placeholder="Поиск по названию…" style="min-width:220px">
+        <button class="ghost" onclick="doSearch()">Найти</button>
+        <button class="ghost" onclick="clearSearch()">Сброс</button>
+        <div class="spacer" style="flex:1"></div>
+        <button id="publishBtn" class="hidden" onclick="openPublish()">+ Опубликовать</button>
+    </div>
+
+    <div id="feed" class="grid"></div>
+    <div id="emptyState" class="muted hidden" style="text-align:center;padding:40px">Пока нет фотографий.</div>
+
+    <div class="pagination" id="pagination">
+        <button class="ghost small" onclick="prevPage()">← Назад</button>
+        <span class="muted">Страница <span id="pageNum">1</span></span>
+        <button class="ghost small" onclick="nextPage()">Вперёд →</button>
+        <select id="sizeSelect" onchange="changeSize()" style="margin-left:10px">
+            <option value="6">6 / стр</option>
+            <option value="9" selected>9 / стр</option>
+            <option value="12">12 / стр</option>
+        </select>
+    </div>
+</div>
+
+<!-- Modal: photo detail -->
+<div class="overlay" id="detailOverlay">
+    <div class="modal" id="detailModal"></div>
+</div>
+
+<!-- Modal: publish / edit -->
+<div class="overlay" id="formOverlay">
+    <div class="modal" id="formModal"></div>
+</div>
+
+<!-- Modal: auth (register) -->
+<div class="overlay" id="authOverlay">
+    <div class="modal" id="authModal"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const state = {
+    auth: sessionStorage.getItem('auth') || null,
+    email: sessionStorage.getItem('email') || null,
+    userId: sessionStorage.getItem('userId') || null,
+    role: sessionStorage.getItem('role') || null,
+    nickname: sessionStorage.getItem('nickname') || null,
+    page: 0, size: 9, search: ''
+};
+
+function toast(msg, ok) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.borderColor = ok ? 'var(--ok)' : 'var(--danger)';
+    t.style.display = 'block';
+    clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 3000);
+}
+
+async function api(method, path, body, useAuth) {
+    const headers = {};
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    if (useAuth && state.auth) headers['Authorization'] = 'Basic ' + state.auth;
+    const res = await fetch(path, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+    if (!res.ok) throw { status: res.status, data };
+    return data;
+}
+
+function errMsg(e) {
+    if (e && e.data && (e.data.message || e.data.errorCode)) return e.data.message || e.data.errorCode;
+    if (e && e.status === 401) return 'Нужно войти в систему';
+    if (e && e.status === 403) return 'Недостаточно прав';
+    return 'Ошибка запроса';
+}
+
+/* ---------- auth ---------- */
+function isLogged() { return !!state.auth; }
+function isAdmin() { return state.role === 'ADMIN'; }
+
+function renderAuth() {
+    const box = document.getElementById('authBox');
+    if (isLogged()) {
+        box.innerHTML = `<span class="muted">Вы вошли как <b>${state.nickname || state.email}</b>${isAdmin() ? ' (ADMIN)' : ''}</span>
+            <button class="ghost small" onclick="logout()">Выйти</button>`;
+        document.getElementById('publishBtn').classList.remove('hidden');
+    } else {
+        box.innerHTML = `<button class="ghost small" onclick="openLogin()">Войти</button>
+            <button class="small" onclick="openRegister()">Регистрация</button>`;
+        document.getElementById('publishBtn').classList.add('hidden');
+    }
+}
+
+async function login(email, password) {
+    const cred = btoa(email + ':' + password);
+    const res = await fetch('/users', { headers: { Authorization: 'Basic ' + cred } });
+    if (!res.ok) throw { status: res.status };
+    const users = await res.json();
+    const me = users.find(u => u.email === email);
+    state.auth = cred; state.email = email;
+    state.userId = me ? me.id : null; state.role = me ? me.role : 'USER'; state.nickname = me ? me.nickname : email;
+    ['auth','email','userId','role','nickname'].forEach(k => sessionStorage.setItem(k, state[k]));
+    renderAuth();
+}
+
+function logout() {
+    state.auth = state.email = state.userId = state.role = state.nickname = null;
+    sessionStorage.clear();
+    renderAuth(); closeAll(); loadFeed();
+}
+
+function openLogin() {
+    document.getElementById('authModal').innerHTML = `
+        <span class="close-x" onclick="closeAll()">&times;</span>
+        <h2>Вход</h2>
+        <div class="field"><label>Email</label><input id="li_email"></div>
+        <div class="field"><label>Пароль</label><input id="li_pass" type="password"></div>
+        <button onclick="submitLogin()">Войти</button>`;
+    document.getElementById('authOverlay').classList.add('open');
+}
+async function submitLogin() {
+    try {
+        await login(li_email.value.trim(), li_pass.value);
+        closeAll(); toast('Вы вошли', true); loadFeed();
+    } catch (e) { toast('Неверный email или пароль'); }
+}
+
+function openRegister() {
+    document.getElementById('authModal').innerHTML = `
+        <span class="close-x" onclick="closeAll()">&times;</span>
+        <h2>Регистрация</h2>
+        <div class="field"><label>Email</label><input id="re_email"></div>
+        <div class="field"><label>Никнейм</label><input id="re_nick"></div>
+        <div class="field"><label>Пароль</label><input id="re_pass" type="password"></div>
+        <button onclick="submitRegister()">Создать аккаунт</button>`;
+    document.getElementById('authOverlay').classList.add('open');
+}
+async function submitRegister() {
+    try {
+        await api('POST', '/users', { email: re_email.value.trim(), nickname: re_nick.value.trim(), password: re_pass.value }, false);
+        await login(re_email.value.trim(), re_pass.value);
+        closeAll(); toast('Аккаунт создан, вы вошли', true); loadFeed();
+    } catch (e) { toast(errMsg(e)); }
+}
+
+/* ---------- feed ---------- */
+function colorFor(str) {
+    let h = 0; for (const c of (str || 'x')) h = (h * 31 + c.charCodeAt(0)) % 360;
+    return `linear-gradient(135deg, hsl(${h},55%,45%), hsl(${(h + 40) % 360},55%,35%))`;
+}
+
+async function loadFeed() {
+    const feed = document.getElementById('feed');
+    let photos;
+    try {
+        if (state.search) {
+            photos = await api('GET', '/photos/search?title=' + encodeURIComponent(state.search));
+            document.getElementById('pagination').style.display = 'none';
+        } else {
+            photos = await api('GET', `/photos?page=${state.page}&size=${state.size}`);
+            document.getElementById('pagination').style.display = 'flex';
+        }
+    } catch (e) { toast(errMsg(e)); return; }
+
+    document.getElementById('pageNum').textContent = state.page + 1;
+    document.getElementById('emptyState').classList.toggle('hidden', photos.length > 0);
+    feed.innerHTML = '';
+    for (const p of photos) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = () => openPhoto(p.id);
+        card.innerHTML = `
+            <div class="card-cover" style="background:${colorFor(p.category)}">${(p.title || '?')[0].toUpperCase()}</div>
+            <div class="card-body">
+                <div class="card-title">${escapeHtml(p.title)} <span class="rate-pill" id="pill_${p.id}">…</span></div>
+                <div class="card-desc">${escapeHtml(p.description || '')}</div>
+                <span class="badge">${escapeHtml(p.category || 'без категории')}</span>
+            </div>`;
+        feed.appendChild(card);
+        api('GET', `/photos/${p.id}/ratings/average`).then(a => {
+            const pill = document.getElementById('pill_' + p.id);
+            if (pill) pill.textContent = a.overall ? '★ ' + a.overall.toFixed(1) : 'нет оценок';
+        }).catch(() => {});
+    }
+}
+
+function doSearch() { state.search = document.getElementById('searchInput').value.trim(); loadFeed(); }
+function clearSearch() { state.search = ''; document.getElementById('searchInput').value = ''; state.page = 0; loadFeed(); }
+function prevPage() { if (state.page > 0) { state.page--; loadFeed(); } }
+function nextPage() { state.page++; loadFeed(); }
+function changeSize() { state.size = +document.getElementById('sizeSelect').value; state.page = 0; loadFeed(); }
+
+/* ---------- photo detail ---------- */
+async function openPhoto(id) {
+    let photo, avg, comments;
+    try {
+        photo = await api('GET', '/photos/' + id);
+        avg = await api('GET', `/photos/${id}/ratings/average`);
+        comments = await api('GET', `/photos/${id}/comments`);
+    } catch (e) { toast(errMsg(e)); return; }
+
+    const mine = isLogged() && photo.userId === state.userId;
+    const canModerate = mine || isAdmin();
+    const canRate = isLogged() && photo.userId !== state.userId;
+
+    const bar = (label, val) => `
+        <div class="crit-row">
+            <span class="muted">${label}</span>
+            <div class="bar"><div style="width:${(val || 0) * 10}%"></div></div>
+            <b>${(val || 0).toFixed(1)}</b>
+        </div>`;
+
+    let ratingForm = '';
+    if (canRate) {
+        ratingForm = `
+            <div class="section-title">Поставить оценку</div>
+            <div class="crit-row"><span class="muted">Visual Appeal</span><input id="r_va" type="number" min="1" max="10" value="8"><span></span></div>
+            <div class="crit-row"><span class="muted">Photo Quality</span><input id="r_pq" type="number" min="1" max="10" value="8"><span></span></div>
+            <div class="crit-row"><span class="muted">Style</span><input id="r_st" type="number" min="1" max="10" value="8"><span></span></div>
+            <button class="small" onclick="submitRating('${id}')">Оценить</button>`;
+    } else if (!isLogged()) {
+        ratingForm = `<div class="muted" style="margin-top:10px">Войдите, чтобы оценивать и комментировать.</div>`;
+    } else {
+        ratingForm = `<div class="muted" style="margin-top:10px">Это ваша фотография — оценить нельзя.</div>`;
+    }
+
+    let commentsHtml = comments.map(c => `
+        <div class="comment">
+            <div>${escapeHtml(c.text)}</div>
+            <div class="who">${c.createdAt}
+                ${(isLogged() && (c.userId === state.userId || isAdmin())) ? `· <a href="#" onclick="deleteComment(${c.id},'${id}');return false">удалить</a>` : ''}
+            </div>
+        </div>`).join('') || '<div class="muted">Комментариев пока нет.</div>';
+
+    let commentForm = isLogged() ? `
+        <div class="row" style="margin-top:10px">
+            <input id="c_text" placeholder="Ваш комментарий…" style="flex:1">
+            <button class="small" onclick="submitComment('${id}')">Отправить</button>
+        </div>` : '';
+
+    document.getElementById('detailModal').innerHTML = `
+        <span class="close-x" onclick="closeAll()">&times;</span>
+        <div class="card-cover" style="background:${colorFor(photo.category)};height:150px;border-radius:12px;font-size:56px">${(photo.title || '?')[0].toUpperCase()}</div>
+        <h2 style="margin-bottom:4px">${escapeHtml(photo.title)}</h2>
+        <span class="badge">${escapeHtml(photo.category || 'без категории')}</span>
+        <p class="muted">${escapeHtml(photo.description || '')}</p>
+        ${canModerate ? `<div class="row" style="margin:10px 0">
+            <button class="ghost small" onclick='openEdit(${JSON.stringify(photo)})'>Редактировать</button>
+            <button class="danger small" onclick="deletePhoto('${id}')">Удалить</button>
+        </div>` : ''}
+
+        <div class="section-title">Рейтинг · общий ★ ${(avg.overall || 0).toFixed(1)}</div>
+        ${bar('Visual Appeal', avg.visualAppeal)}
+        ${bar('Photo Quality', avg.photoQuality)}
+        ${bar('Style', avg.style)}
+
+        ${ratingForm}
+
+        <div class="section-title">Комментарии</div>
+        ${commentsHtml}
+        ${commentForm}`;
+    document.getElementById('detailOverlay').classList.add('open');
+}
+
+async function submitRating(id) {
+    try {
+        await api('POST', `/photos/${id}/ratings`, {
+            visualAppeal: +r_va.value, photoQuality: +r_pq.value, style: +r_st.value
+        }, true);
+        toast('Оценка сохранена', true); openPhoto(id); loadFeed();
+    } catch (e) { toast(errMsg(e)); }
+}
+
+async function submitComment(id) {
+    try {
+        await api('POST', `/photos/${id}/comments`, { text: c_text.value }, true);
+        openPhoto(id);
+    } catch (e) { toast(errMsg(e)); }
+}
+async function deleteComment(cid, pid) {
+    try { await api('DELETE', '/comments/' + cid, undefined, true); openPhoto(pid); }
+    catch (e) { toast(errMsg(e)); }
+}
+
+/* ---------- publish / edit ---------- */
+function openPublish() {
+    if (!isLogged()) { openLogin(); return; }
+    document.getElementById('formModal').innerHTML = `
+        <span class="close-x" onclick="closeAll()">&times;</span>
+        <h2>Новая публикация</h2>
+        <div class="field"><label>Название</label><input id="f_title"></div>
+        <div class="field"><label>Описание</label><textarea id="f_desc" rows="3"></textarea></div>
+        <div class="field"><label>Категория</label><input id="f_cat" placeholder="nature, people, city…"></div>
+        <button onclick="submitPublish()">Опубликовать</button>`;
+    document.getElementById('formOverlay').classList.add('open');
+}
+async function submitPublish() {
+    try {
+        await api('POST', '/photos', { title: f_title.value, description: f_desc.value, category: f_cat.value }, true);
+        closeAll(); toast('Опубликовано', true); state.page = 0; loadFeed();
+    } catch (e) { toast(errMsg(e)); }
+}
+
+function openEdit(photo) {
+    document.getElementById('formModal').innerHTML = `
+        <span class="close-x" onclick="closeAll()">&times;</span>
+        <h2>Редактировать</h2>
+        <div class="field"><label>Название</label><input id="e_title" value="${escapeAttr(photo.title)}"></div>
+        <div class="field"><label>Описание</label><textarea id="e_desc" rows="3">${escapeHtml(photo.description || '')}</textarea></div>
+        <div class="field"><label>Категория</label><input id="e_cat" value="${escapeAttr(photo.category || '')}"></div>
+        <button onclick="submitEdit('${photo.id}', ${photo.version})">Сохранить</button>`;
+    document.getElementById('formOverlay').classList.add('open');
+    document.getElementById('detailOverlay').classList.remove('open');
+}
+async function submitEdit(id, version) {
+    try {
+        await api('PUT', '/photos/' + id, {
+            title: e_title.value, description: e_desc.value, category: e_cat.value, version: version
+        }, true);
+        closeAll(); toast('Сохранено', true); loadFeed();
+    } catch (e) { toast(errMsg(e)); }
+}
+async function deletePhoto(id) {
+    if (!confirm('Удалить фотографию?')) return;
+    try { await api('DELETE', '/photos/' + id, undefined, true); closeAll(); toast('Удалено', true); loadFeed(); }
+    catch (e) { toast(errMsg(e)); }
+}
+
+/* ---------- utils ---------- */
+function closeAll() { document.querySelectorAll('.overlay').forEach(o => o.classList.remove('open')); }
+function escapeHtml(s) { return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function escapeAttr(s) { return escapeHtml(s).replace(/'/g, '&#39;'); }
+document.querySelectorAll('.overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) closeAll(); }));
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+renderAuth();
+loadFeed();
+</script>
+</body>
+</html>
