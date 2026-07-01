@@ -9,6 +9,7 @@ import com.vsu.demo.repository.RatingRepository;
 import com.vsu.demo.repository.UserRepository;
 import com.vsu.demo.request.CreateRatingRequest;
 import com.vsu.demo.response.ErrorCode;
+import com.vsu.demo.response.RatingAverage;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,9 +32,10 @@ public class RatingService {
 
     @Transactional
     public Rating rate(UUID photoId, CreateRatingRequest request, Authentication auth) {
-        if (request.score() == null || request.score() < 1 || request.score() > 10) {
-            throw new ValidationException("Score must be between 1 and 10");
-        }
+        checkCriterion(request.visualAppeal(), "Visual appeal");
+        checkCriterion(request.photoQuality(), "Photo quality");
+        checkCriterion(request.style(), "Style");
+
         User user = userRepository.findByEmail(auth.getName())
                 .orElseThrow(() -> new ValidationException("User not found"));
         Photo photo = photoRepository.findById(photoId)
@@ -46,16 +48,22 @@ public class RatingService {
             throw new ValidationException(ErrorCode.ALREADY_RATED);
         }
 
-        Rating rating = new Rating(UUID.randomUUID(), request.score(), LocalDate.now(), user.getId(), photoId);
+        Rating rating = new Rating(UUID.randomUUID(), request.visualAppeal(), request.photoQuality(),
+                request.style(), LocalDate.now(), user.getId(), photoId);
         ratingRepository.create(rating);
         return rating;
     }
 
-    public Double averageScore(UUID photoId) {
+    public RatingAverage averageByPhoto(UUID photoId) {
         if (photoRepository.findById(photoId).isEmpty()) {
             throw new ValidationException(ErrorCode.PHOTO_NOT_FOUND);
         }
-        Double avg = ratingRepository.averageByPhoto(photoId);
-        return avg == null ? 0.0 : avg;
+        return ratingRepository.averageByPhoto(photoId);
+    }
+
+    private void checkCriterion(Integer value, String name) {
+        if (value == null || value < 1 || value > 10) {
+            throw new ValidationException(name + " must be between 1 and 10");
+        }
     }
 }

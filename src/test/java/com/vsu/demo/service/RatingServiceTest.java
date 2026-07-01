@@ -55,8 +55,8 @@ class RatingServiceTest {
     }
 
     @Test
-    void rate_shouldThrow_whenScoreOutOfRange() {
-        CreateRatingRequest request = new CreateRatingRequest(11);
+    void rate_shouldThrow_whenCriterionOutOfRange() {
+        CreateRatingRequest request = new CreateRatingRequest(11, 5, 5);
         assertThrows(ValidationException.class, () -> ratingService.rate(photoId, request, auth));
     }
 
@@ -66,7 +66,7 @@ class RatingServiceTest {
         when(userRepository.findByEmail(owner.getEmail())).thenReturn(Optional.of(owner));
         when(photoRepository.findById(photoId)).thenReturn(Optional.of(photo));
 
-        CreateRatingRequest request = new CreateRatingRequest(8);
+        CreateRatingRequest request = new CreateRatingRequest(8, 7, 9);
         assertThrows(ValidationException.class, () -> ratingService.rate(photoId, request, auth));
     }
 
@@ -77,7 +77,7 @@ class RatingServiceTest {
         when(photoRepository.findById(photoId)).thenReturn(Optional.of(photo));
         when(ratingRepository.existsByUserAndPhoto(rater.getId(), photoId)).thenReturn(true);
 
-        CreateRatingRequest request = new CreateRatingRequest(8);
+        CreateRatingRequest request = new CreateRatingRequest(8, 7, 9);
         assertThrows(ValidationException.class, () -> ratingService.rate(photoId, request, auth));
     }
 
@@ -89,10 +89,13 @@ class RatingServiceTest {
         when(ratingRepository.existsByUserAndPhoto(rater.getId(), photoId)).thenReturn(false);
         when(ratingRepository.create(any())).thenReturn(true);
 
-        CreateRatingRequest request = new CreateRatingRequest(8);
+        CreateRatingRequest request = new CreateRatingRequest(9, 6, 9);
         Rating result = ratingService.rate(photoId, request, auth);
 
-        assertEquals(8, result.getScore());
+        assertEquals(9, result.getVisualAppeal());
+        assertEquals(6, result.getPhotoQuality());
+        assertEquals(9, result.getStyle());
+        assertEquals(8.0, result.getOverall());
         assertEquals(rater.getId(), result.getUserId());
     }
 }

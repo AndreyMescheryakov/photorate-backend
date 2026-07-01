@@ -2,6 +2,7 @@ package com.vsu.demo.controller;
 
 import com.vsu.demo.entity.Rating;
 import com.vsu.demo.request.CreateRatingRequest;
+import com.vsu.demo.response.RatingAverage;
 import com.vsu.demo.service.RatingService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class RatingController {
     }
 
     @GetMapping("/average")
-    public Double average(@PathVariable UUID photoId) {
-        return ratingService.averageScore(photoId);
+    public RatingAverage average(@PathVariable UUID photoId) {
+        return ratingService.averageByPhoto(photoId);
     }
 }

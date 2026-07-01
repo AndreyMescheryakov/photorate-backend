@@ -32,7 +32,9 @@ CREATE TABLE photos (
 
 CREATE TABLE ratings (
     id UUID PRIMARY KEY,
-    score INT NOT NULL,
+    visual_appeal INT NOT NULL,
+    photo_quality INT NOT NULL,
+    style INT NOT NULL,
     created_at DATE,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     photo_id UUID REFERENCES photos(id) ON DELETE CASCADE,

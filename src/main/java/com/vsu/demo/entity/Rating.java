@@ -5,14 +5,19 @@ import java.util.UUID;
 
 public class Rating {
     private UUID id;
-    private Integer score;
+    private Integer visualAppeal;
+    private Integer photoQuality;
+    private Integer style;
     private LocalDate createdAt;
     private UUID userId;
     private UUID photoId;
 
-    public Rating(UUID id, Integer score, LocalDate createdAt, UUID userId, UUID photoId) {
+    public Rating(UUID id, Integer visualAppeal, Integer photoQuality, Integer style,
+                  LocalDate createdAt, UUID userId, UUID photoId) {
         this.id = id;
-        this.score = score;
+        this.visualAppeal = visualAppeal;
+        this.photoQuality = photoQuality;
+        this.style = style;
         this.createdAt = createdAt;
         this.userId = userId;
         this.photoId = photoId;
@@ -22,8 +27,20 @@ public class Rating {
         return id;
     }
 
-    public Integer getScore() {
-        return score;
+    public Integer getVisualAppeal() {
+        return visualAppeal;
+    }
+
+    public Integer getPhotoQuality() {
+        return photoQuality;
+    }
+
+    public Integer getStyle() {
+        return style;
+    }
+
+    public double getOverall() {
+        return (visualAppeal + photoQuality + style) / 3.0;
     }
 
     public LocalDate getCreatedAt() {

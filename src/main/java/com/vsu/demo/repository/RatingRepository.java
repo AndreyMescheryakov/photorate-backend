@@ -1,6 +1,7 @@
 package com.vsu.demo.repository;
 
 import com.vsu.demo.entity.Rating;
+import com.vsu.demo.response.RatingAverage;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -18,11 +19,13 @@ public class RatingRepository {
     }
 
     public Boolean create(Rating rating) {
-        String sql = "INSERT INTO ratings (id, score, created_at, user_id, photo_id) " +
-                "VALUES (:id, :score, :createdAt, :userId, :photoId)";
+        String sql = "INSERT INTO ratings (id, visual_appeal, photo_quality, style, created_at, user_id, photo_id) " +
+                "VALUES (:id, :visualAppeal, :photoQuality, :style, :createdAt, :userId, :photoId)";
         return namedParameterJdbcTemplate.update(sql, Map.of(
                 "id", rating.getId(),
-                "score", rating.getScore(),
+                "visualAppeal", rating.getVisualAppeal(),
+                "photoQuality", rating.getPhotoQuality(),
+                "style", rating.getStyle(),
                 "createdAt", rating.getCreatedAt(),
                 "userId", rating.getUserId(),
                 "photoId", rating.getPhotoId()
@@ -36,9 +39,16 @@ public class RatingRepository {
         return count != null && count > 0;
     }
 
-    public Double averageByPhoto(UUID photoId) {
-        String sql = "SELECT avg(score) FROM ratings WHERE photo_id = :photoId";
-        return namedParameterJdbcTemplate.queryForObject(sql, Map.of("photoId", photoId), Double.class);
+    public RatingAverage averageByPhoto(UUID photoId) {
+        String sql = "SELECT avg(visual_appeal) AS va, avg(photo_quality) AS pq, avg(style) AS st " +
+                "FROM ratings WHERE photo_id = :photoId";
+        return namedParameterJdbcTemplate.queryForObject(sql, Map.of("photoId", photoId), (rs, rowNum) -> {
+            double va = rs.getDouble("va");
+            double pq = rs.getDouble("pq");
+            double st = rs.getDouble("st");
+            double overall = (va + pq + st) / 3.0;
+            return new RatingAverage(va, pq, st, overall);
+        });
     }
 
     public List<Rating> findByPhoto(UUID photoId) {
@@ -48,7 +58,9 @@ public class RatingRepository {
 
     private static final RowMapper<Rating> RATING_ROW_MAPPER = (rs, rowNum) -> new Rating(
             rs.getObject("id", UUID.class),
-            rs.getInt("score"),
+            rs.getInt("visual_appeal"),
+            rs.getInt("photo_quality"),
+            rs.getInt("style"),
             rs.getDate("created_at").toLocalDate(),
             rs.getObject("user_id", UUID.class),
             rs.getObject("photo_id", UUID.class)
