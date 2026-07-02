@@ -1,10 +1,12 @@
 package com.vsu.demo.repository;
 
 import com.vsu.demo.entity.PhotoFile;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -27,4 +29,18 @@ public class PhotoFileRepository {
         params.put("uploadDate", file.getUploadDate());
         return namedParameterJdbcTemplate.update(sql, params) == 1;
     }
+
+    public Optional<PhotoFile> findById(UUID id) {
+        String sql = "SELECT * FROM photo_files WHERE id = :id";
+        return namedParameterJdbcTemplate.query(sql, Map.of("id", id), PHOTO_FILE_ROW_MAPPER).stream().findFirst();
+    }
+
+    private static final RowMapper<PhotoFile> PHOTO_FILE_ROW_MAPPER = (rs, rowNum) -> new PhotoFile(
+            rs.getObject("id", UUID.class),
+            rs.getString("file_name"),
+            rs.getString("file_content"),
+            rs.getString("file_extension"),
+            rs.getObject("file_size_kb", Integer.class),
+            rs.getDate("upload_date") != null ? rs.getDate("upload_date").toLocalDate() : null
+    );
 }

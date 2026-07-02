@@ -1,12 +1,16 @@
 package com.vsu.demo.controller;
 
 import com.vsu.demo.entity.Photo;
+import com.vsu.demo.entity.PhotoFile;
 import com.vsu.demo.request.CreatePhotoRequest;
 import com.vsu.demo.request.UpdatePhotoRequest;
 import com.vsu.demo.service.PhotoService;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,6 +32,24 @@ public class PhotoController {
     @GetMapping("/{id}")
     public Photo findById(@PathVariable UUID id) {
         return photoService.findById(id);
+    }
+
+    @GetMapping("/{id}/file")
+    public ResponseEntity<byte[]> file(@PathVariable UUID id) {
+        PhotoFile f = photoService.getFile(id);
+        byte[] bytes = Base64.getDecoder().decode(f.getFileContent());
+        return ResponseEntity.ok().contentType(mediaType(f.getFileExtension())).body(bytes);
+    }
+
+    private MediaType mediaType(String extension) {
+        if (extension == null) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+        return switch (extension.toLowerCase()) {
+            case "png" -> MediaType.IMAGE_PNG;
+            case "jpg", "jpeg" -> MediaType.IMAGE_JPEG;
+            default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
     }
 
     @GetMapping("/search")

@@ -41,6 +41,15 @@ public class PhotoService {
                 .orElseThrow(() -> new ValidationException(ErrorCode.PHOTO_NOT_FOUND));
     }
 
+    public PhotoFile getFile(UUID photoId) {
+        Photo photo = findById(photoId);
+        if (photo.getPhotoFileId() == null) {
+            throw new ValidationException("Photo has no file");
+        }
+        return photoFileRepository.findById(photo.getPhotoFileId())
+                .orElseThrow(() -> new ValidationException("File not found"));
+    }
+
     public List<Photo> findByTitle(String title) {
         return photoRepository.findByTitle(title);
     }

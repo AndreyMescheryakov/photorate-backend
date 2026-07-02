@@ -7,3 +7,8 @@ spring:
     url: jdbc:postgresql://localhost:5432/photorate
     username: postgres
     password: "00634724"
+
+server:
+  tomcat:
+    max-http-form-post-size: 20MB
+    max-swallow-size: 20MB
