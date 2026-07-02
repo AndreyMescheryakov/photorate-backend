@@ -85,6 +85,10 @@
         background: var(--panel2); border: 1px solid var(--border); padding: 12px 18px;
         border-radius: 10px; display: none; z-index: 40; max-width: 90%; }
     .hidden { display: none !important; }
+    #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none;
+        align-items: center; justify-content: center; z-index: 100; padding: 20px; cursor: zoom-out; }
+    #lightbox.open { display: flex; }
+    #lightbox img { max-width: 96vw; max-height: 96vh; object-fit: contain; border-radius: 8px; }
     .section-title { font-size: 15px; font-weight: 700; margin: 18px 0 10px; }
     .tip { border-bottom: 1px dotted var(--muted); cursor: help; position: relative; }
     .tip:hover::after {
@@ -140,6 +144,10 @@
 <!-- Modal: auth (register) -->
 <div class="overlay" id="authOverlay">
     <div class="modal" id="authModal"></div>
+</div>
+
+<div id="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" alt="">
 </div>
 
 <div id="toast"></div>
@@ -350,10 +358,9 @@ async function openPhoto(id) {
 
     let commentsHtml = comments.map(c => `
         <div class="comment">
+            <div><b>${escapeHtml(c.authorNickname || 'Пользователь')}</b> <span class="who">· ${c.createdAt}</span></div>
             <div>${escapeHtml(c.text)}</div>
-            <div class="who">${c.createdAt}
-                ${(isLogged() && (c.userId === state.userId || isAdmin())) ? `· <a href="#" onclick="deleteComment(${c.id},'${id}');return false">удалить</a>` : ''}
-            </div>
+            ${(isLogged() && (c.userId === state.userId || isAdmin())) ? `<div class="who"><a href="#" onclick="deleteComment(${c.id},'${id}');return false">удалить</a></div>` : ''}
         </div>`).join('') || '<div class="muted">Комментариев пока нет.</div>';
 
     let commentForm = isLogged() ? `
@@ -363,7 +370,7 @@ async function openPhoto(id) {
         </div>` : '';
 
     const detailCover = photo.photoFileId
-        ? `<img src="/photos/${photo.id}/file" alt="" style="width:100%;height:230px;object-fit:cover;border-radius:12px">`
+        ? `<img src="/photos/${photo.id}/file" alt="" onclick="openLightbox('/photos/${photo.id}/file')" title="Нажмите, чтобы развернуть" style="width:100%;height:230px;object-fit:cover;border-radius:12px;cursor:zoom-in">`
         : `<div class="card-cover" style="background:${colorFor(photo.category)};height:150px;border-radius:12px;font-size:56px">${(photo.title || '?')[0].toUpperCase()}</div>`;
     document.getElementById('detailModal').innerHTML = `
         <span class="close-x" onclick="closeAll()">&times;</span>
@@ -466,6 +473,8 @@ async function deletePhoto(id) {
 
 /* ---------- utils ---------- */
 function closeAll() { document.querySelectorAll('.overlay').forEach(o => o.classList.remove('open')); }
+function openLightbox(src) { document.getElementById('lightboxImg').src = src; document.getElementById('lightbox').classList.add('open'); }
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); }
 function escapeHtml(s) { return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function escapeAttr(s) { return escapeHtml(s).replace(/'/g, '&#39;'); }
 document.querySelectorAll('.overlay').forEach(o => o.addEventListener('click', e => { if (e.target === o) closeAll(); }));

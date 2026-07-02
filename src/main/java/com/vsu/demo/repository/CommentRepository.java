@@ -41,8 +41,19 @@ public class CommentRepository {
     }
 
     public List<Comment> findByPhoto(UUID photoId) {
-        String sql = "SELECT * FROM comments WHERE photo_id = :photoId ORDER BY created_at DESC";
-        return namedParameterJdbcTemplate.query(sql, Map.of("photoId", photoId), COMMENT_ROW_MAPPER);
+        String sql = "SELECT c.*, u.nickname AS author_nickname FROM comments c " +
+                "JOIN users u ON u.id = c.user_id WHERE c.photo_id = :photoId ORDER BY c.created_at DESC";
+        return namedParameterJdbcTemplate.query(sql, Map.of("photoId", photoId), (rs, rowNum) -> {
+            Comment c = new Comment(
+                    rs.getInt("id"),
+                    rs.getString("text"),
+                    rs.getDate("created_at").toLocalDate(),
+                    rs.getObject("user_id", UUID.class),
+                    rs.getObject("photo_id", UUID.class)
+            );
+            c.setAuthorNickname(rs.getString("author_nickname"));
+            return c;
+        });
     }
 
     public Boolean deleteById(Integer id) {

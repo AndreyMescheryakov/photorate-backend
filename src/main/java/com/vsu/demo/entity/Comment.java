@@ -9,6 +9,7 @@ public class Comment {
     private LocalDate createdAt;
     private UUID userId;
     private UUID photoId;
+    private String authorNickname;
 
     public Comment(Integer id, String text, LocalDate createdAt, UUID userId, UUID photoId) {
         this.id = id;
@@ -16,6 +17,14 @@ public class Comment {
         this.createdAt = createdAt;
         this.userId = userId;
         this.photoId = photoId;
+    }
+
+    public String getAuthorNickname() {
+        return authorNickname;
+    }
+
+    public void setAuthorNickname(String authorNickname) {
+        this.authorNickname = authorNickname;
     }
 
     public Integer getId() {
